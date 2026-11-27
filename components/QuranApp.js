@@ -385,7 +385,7 @@ export default function QuranApp() {
   });
 
   return (
-    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${t.page}`}>
+    <div className={`min-h-screen flex flex-col overflow-x-hidden transition-colors duration-200 ${t.page}`}>
       <audio
         ref={audioRef}
         onLoadedMetadata={handleLoadedMetadata}
@@ -395,39 +395,48 @@ export default function QuranApp() {
 
       {/* Top Header */}
       <header className={`sticky top-0 z-30 border-b backdrop-blur-md ${t.surface}`}>
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen((v) => !v)}
-              className="lg:hidden p-2 rounded-lg border border-current/15 hover:opacity-80"
+              className="lg:hidden p-2 rounded-lg border border-current/15 hover:opacity-80 shrink-0"
               aria-label="Toggle navigation"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition">
-              <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-arabic text-lg shadow-sm">
+            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 hover:opacity-85 transition min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-arabic text-base sm:text-lg shadow-sm shrink-0">
                 ق
               </div>
-              <div>
-                <h1 className="font-semibold text-base leading-tight">Al-Bayan</h1>
-                <p className={`text-xs ${t.muted}`}>Qur&apos;an Reader &amp; Study</p>
+              <div className="min-w-0">
+                <h1 className="font-semibold text-sm sm:text-base leading-tight truncate">Al-Bayan</h1>
+                <p className={`hidden sm:block text-xs ${t.muted}`}>Qur&apos;an Reader &amp; Study</p>
               </div>
             </Link>
           </div>
 
-          {/* Search trigger */}
+          {/* Search trigger (icon on tiny mobile, bar on sm+) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className={`flex-1 max-w-md flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-sm transition ${t.surfaceAlt}`}
+            className={`hidden sm:flex flex-1 max-w-md items-center gap-2.5 px-3.5 py-2 rounded-xl border text-sm transition ${t.surfaceAlt}`}
           >
-            <Search className={`w-4 h-4 ${t.muted}`} />
+            <Search className={`w-4 h-4 shrink-0 ${t.muted}`} />
             <span className={`truncate ${t.muted}`}>
               Search Ayahs in Arabic or English...
             </span>
           </button>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className={`sm:hidden p-2 rounded-lg border ${t.surfaceAlt}`}
+              aria-label="Search Ayahs"
+              title="Search Ayahs"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
             {progress && (
               <button
                 onClick={() => loadSurah(progress.surah_number, progress.ayah_number)}
@@ -470,6 +479,7 @@ export default function QuranApp() {
               onClick={() => setShowSettings((v) => !v)}
               className={`p-2 rounded-lg border ${t.surfaceAlt}`}
               title="Reader settings"
+              aria-label="Reader settings"
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>
@@ -478,27 +488,66 @@ export default function QuranApp() {
 
         {/* Settings Bar */}
         {showSettings && (
-          <div className={`border-t px-4 py-3 ${t.surfaceAlt}`}>
-            <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-6 text-sm">
-              <label className="flex items-center gap-2.5">
+          <div className={`border-t px-3 sm:px-4 py-3 ${t.surfaceAlt}`}>
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-6 text-sm">
+              {/* Mobile-only Theme + Resume row */}
+              <div className="flex sm:hidden items-center justify-between gap-2 pb-2 border-b border-current/10">
+                <div className={`flex items-center p-1 rounded-lg border ${t.surface}`}>
+                  <button
+                    onClick={() => setTheme("light")}
+                    className={`px-2.5 py-1 rounded-md text-xs flex items-center gap-1 ${theme === "light" ? "bg-emerald-700 text-white" : t.muted}`}
+                  >
+                    <Sun className="w-3.5 h-3.5" /> Light
+                  </button>
+                  <button
+                    onClick={() => setTheme("sepia")}
+                    className={`px-2.5 py-1 rounded-md text-xs flex items-center gap-1 ${theme === "sepia" ? "bg-emerald-700 text-white" : t.muted}`}
+                  >
+                    <Coffee className="w-3.5 h-3.5" /> Sepia
+                  </button>
+                  <button
+                    onClick={() => setTheme("dark")}
+                    className={`px-2.5 py-1 rounded-md text-xs flex items-center gap-1 ${theme === "dark" ? "bg-emerald-700 text-white" : t.muted}`}
+                  >
+                    <Moon className="w-3.5 h-3.5" /> Dark
+                  </button>
+                </div>
+
+                {progress && (
+                  <button
+                    onClick={() => {
+                      loadSurah(progress.surah_number, progress.ayah_number);
+                      setShowSettings(false);
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${t.accentSoft}`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>{progress.surah_number}:{progress.ayah_number}</span>
+                  </button>
+                )}
+              </div>
+
+              <label className="flex items-center justify-between sm:justify-start gap-2.5">
                 <span className={t.muted}>Arabic Size:</span>
-                <input
-                  type="range"
-                  min={22}
-                  max={48}
-                  value={arabicSize}
-                  onChange={(e) => setArabicSize(Number(e.target.value))}
-                  className="accent-emerald-700"
-                />
-                <span className="font-mono text-xs">{arabicSize}px</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={22}
+                    max={48}
+                    value={arabicSize}
+                    onChange={(e) => setArabicSize(Number(e.target.value))}
+                    className="accent-emerald-700 w-28 sm:w-auto"
+                  />
+                  <span className="font-mono text-xs w-9 text-right">{arabicSize}px</span>
+                </div>
               </label>
 
-              <label className="flex items-center gap-2">
+              <label className="flex items-center justify-between sm:justify-start gap-2">
                 <span className={t.muted}>Translation:</span>
                 <select
                   value={translationLang}
                   onChange={(e) => setTranslationLang(e.target.value)}
-                  className={`px-2.5 py-1 rounded-lg border text-xs ${t.surface}`}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs flex-1 sm:flex-initial max-w-[200px] ${t.surface}`}
                 >
                   <option value="en_tl">English &amp; Tagalog</option>
                   <option value="tagalog">Tagalog</option>
@@ -509,12 +558,12 @@ export default function QuranApp() {
                 </select>
               </label>
 
-              <label className="flex items-center gap-2">
+              <label className="flex items-center justify-between sm:justify-start gap-2">
                 <span className={t.muted}>Reciter:</span>
                 <select
                   value={reciter}
                   onChange={(e) => handleReciterChange(e.target.value)}
-                  className={`px-2.5 py-1 rounded-lg border text-xs ${t.surface}`}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs flex-1 sm:flex-initial max-w-[210px] ${t.surface}`}
                 >
                   {RECITERS.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -529,14 +578,35 @@ export default function QuranApp() {
       </header>
 
       {/* Main Layout */}
-      <div className="max-w-7xl w-full mx-auto flex-1 flex gap-6 px-4 py-6 pb-28">
+      <div className="max-w-7xl w-full mx-auto flex-1 flex gap-6 px-3 sm:px-4 py-4 sm:py-6 pb-36 sm:pb-28">
+        {/* Mobile Backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? "fixed inset-y-0 left-0 z-40 w-80 p-4 shadow-2xl" : "hidden"
+            sidebarOpen
+              ? "fixed inset-y-0 left-0 z-50 w-[85vw] max-w-80 p-3 shadow-2xl"
+              : "hidden"
           } lg:block lg:static lg:w-80 lg:shrink-0 lg:p-0 lg:shadow-none ${t.page}`}
         >
-          <div className={`rounded-2xl border overflow-hidden flex flex-col h-[calc(100vh-8rem)] sticky top-22 ${t.surface}`}>
+          <div className={`rounded-2xl border overflow-hidden flex flex-col h-full lg:h-[calc(100vh-8rem)] lg:sticky lg:top-22 ${t.surface}`}>
+            {/* Mobile drawer header */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-current/10 lg:hidden">
+              <span className="font-semibold text-sm">Browse Qur&apos;an</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-current/5"
+                aria-label="Close navigation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             {/* Sidebar Tabs */}
             <div className={`grid grid-cols-4 border-b text-xs font-medium ${t.surfaceAlt}`}>
               {[
@@ -801,12 +871,12 @@ export default function QuranApp() {
                       ref={(el) => {
                         ayahRefs.current[ayah.ayah_number] = el;
                       }}
-                      className={`rounded-2xl border p-5 sm:p-6 transition ${t.surface} ${
+                      className={`rounded-2xl border p-4 sm:p-6 overflow-hidden transition ${t.surface} ${
                         isActive ? t.activeAyah : ""
                       }`}
                     >
                       {/* Ayah Top Bar */}
-                      <div className="flex items-center justify-between gap-2 mb-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-semibold border ${t.accentSoft}`}>
                             {currentSurah.number}:{ayah.ayah_number}
@@ -889,7 +959,7 @@ export default function QuranApp() {
                           <p
                             dir="rtl"
                             style={{ fontSize: `${arabicSize}px` }}
-                            className="font-arabic text-right leading-[2.3] mb-4 select-text"
+                            className="font-arabic text-right leading-[2.3] mb-4 select-text break-words"
                           >
                             {words.map((word, idx) => (
                               <span
@@ -992,26 +1062,26 @@ export default function QuranApp() {
       {/* Sticky Audio Player */}
       {currentSurah && ayahs.length > 0 && (
         <div className={`fixed bottom-0 inset-x-0 z-30 border-t backdrop-blur-md ${t.surface}`}>
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <Volume2 className={`w-5 h-5 shrink-0 ${t.accent}`} />
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-0 sm:h-16 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+              <Volume2 className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${t.accent}`} />
               <div className="min-w-0">
-                <div className="text-sm font-medium truncate">
+                <div className="text-xs sm:text-sm font-medium truncate">
                   {currentSurah.name_english}{" "}
                   {playingAyahNumber ? `• Ayah ${playingAyahNumber}` : ""}
                 </div>
-                <div className={`text-xs truncate ${t.muted}`}>
+                <div className={`text-[11px] sm:text-xs truncate ${t.muted}`}>
                   {RECITERS.find((r) => r.id === reciter)?.name}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <button
                 onClick={() =>
                   playAyah(Math.max(1, (playingAyahNumber || 1) - 1))
                 }
-                className="p-2 rounded-lg hover:bg-current/5"
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-current/5"
                 title="Previous Ayah"
               >
                 <SkipBack className="w-4 h-4" />
@@ -1019,7 +1089,7 @@ export default function QuranApp() {
 
               <button
                 onClick={() => playAyah(playingAyahNumber || 1)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${t.accentBg}`}
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-sm ${t.accentBg}`}
                 title={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
@@ -1029,17 +1099,17 @@ export default function QuranApp() {
                 onClick={() =>
                   playAyah(Math.min(ayahs.length, (playingAyahNumber || 1) + 1))
                 }
-                className="p-2 rounded-lg hover:bg-current/5"
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-current/5"
                 title="Next Ayah"
               >
                 <SkipForward className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t sm:border-t-0 border-current/10">
               <button
                 onClick={() => setReadGuide((v) => !v)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-lg border text-xs font-medium ${
                   readGuide ? t.accentSoft : t.surfaceAlt
                 }`}
                 title="Highlight words progressively while playing"
@@ -1048,28 +1118,30 @@ export default function QuranApp() {
                 Read Guide
               </button>
 
-              <button
-                onClick={() => setLoopAyah((v) => !v)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${
-                  loopAyah ? t.accentSoft : t.surfaceAlt
-                }`}
-                title="Repeat current Ayah (Hifz mode)"
-              >
-                <Repeat className="w-3.5 h-3.5" />
-                Loop
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setLoopAyah((v) => !v)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-lg border text-xs font-medium ${
+                    loopAyah ? t.accentSoft : t.surfaceAlt
+                  }`}
+                  title="Repeat current Ayah (Hifz mode)"
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  Loop
+                </button>
 
-              <select
-                value={playbackRate}
-                onChange={(e) => setPlaybackRate(Number(e.target.value))}
-                className={`px-2 py-1.5 rounded-lg border text-xs font-mono ${t.surfaceAlt}`}
-                title="Playback speed"
-              >
-                <option value={0.75}>0.75x</option>
-                <option value={1}>1.0x</option>
-                <option value={1.25}>1.25x</option>
-                <option value={1.5}>1.5x</option>
-              </select>
+                <select
+                  value={playbackRate}
+                  onChange={(e) => setPlaybackRate(Number(e.target.value))}
+                  className={`px-2 py-1 sm:py-1.5 rounded-lg border text-xs font-mono ${t.surfaceAlt}`}
+                  title="Playback speed"
+                >
+                  <option value={0.75}>0.75x</option>
+                  <option value={1}>1.0x</option>
+                  <option value={1.25}>1.25x</option>
+                  <option value={1.5}>1.5x</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
