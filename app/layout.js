@@ -21,6 +21,10 @@ export const metadata = {
   title: "Al-Bayan — Full-Stack Qur'an Reader & Study Workspace",
   description:
     "Read, listen, search in Arabic & English, bookmark, take reflection notes, and track your Hifz progress.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
