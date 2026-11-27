@@ -1,19 +1,25 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, getQuranData } from "@/lib/db";
 
 export async function GET() {
   try {
     const db = getDb();
-    const progress = db
-      .prepare(`
-        SELECT rp.surah_number, rp.ayah_number, rp.updated_at, s.name_english, s.name_arabic
-        FROM reading_progress rp
-        JOIN surahs s ON s.number = rp.surah_number
-        WHERE rp.id = 1
-      `)
+    const { surahMap } = getQuranData();
+    const rp = db
+      .prepare("SELECT surah_number, ayah_number, updated_at FROM reading_progress WHERE id = 1")
       .get();
 
-    return NextResponse.json({ progress: progress || null });
+    const s = rp ? surahMap.get(rp.surah_number) : null;
+    const progress =
+      rp && s
+        ? {
+            ...rp,
+            name_english: s.name_english,
+            name_arabic: s.name_arabic,
+          }
+        : null;
+
+    return NextResponse.json({ progress });
   } catch (err) {
     console.error("GET /api/progress error:", err);
     return NextResponse.json({ error: "Failed to load progress" }, { status: 500 });

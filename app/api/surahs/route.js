@@ -1,20 +1,24 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, getQuranData } from "@/lib/db";
 
 export async function GET(request) {
   try {
-    const db = getDb();
+    const { surahs: allSurahs, surahMap } = getQuranData();
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get("q") || "").trim().toLowerCase();
 
-    let surahs = db
-      .prepare(`
-        SELECT s.*, h.status AS hifz_status, h.confidence AS hifz_confidence
-        FROM surahs s
-        LEFT JOIN hifz_goals h ON h.surah_number = s.number
-        ORDER BY s.number ASC
-      `)
-      .all();
+    const db = getDb();
+    const hifzRows = db.prepare("SELECT surah_number, status, confidence FROM hifz_goals").all();
+    const hifzMap = new Map(hifzRows.map((h) => [h.surah_number, h]));
+
+    let surahs = allSurahs.map((s) => {
+      const h = hifzMap.get(s.number);
+      return {
+        ...s,
+        hifz_status: h?.status || null,
+        hifz_confidence: h?.confidence || null,
+      };
+    });
 
     if (q) {
       surahs = surahs.filter(
@@ -26,14 +30,18 @@ export async function GET(request) {
       );
     }
 
-    const progress = db
-      .prepare(`
-        SELECT rp.surah_number, rp.ayah_number, rp.updated_at, s.name_english, s.name_arabic
-        FROM reading_progress rp
-        JOIN surahs s ON s.number = rp.surah_number
-        WHERE rp.id = 1
-      `)
+    const rp = db
+      .prepare("SELECT surah_number, ayah_number, updated_at FROM reading_progress WHERE id = 1")
       .get();
+    const rpSurah = rp ? surahMap.get(rp.surah_number) : null;
+    const progress =
+      rp && rpSurah
+        ? {
+            ...rp,
+            name_english: rpSurah.name_english,
+            name_arabic: rpSurah.name_arabic,
+          }
+        : null;
 
     return NextResponse.json({ surahs, progress });
   } catch (err) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb, buildAudioUrl } from "@/lib/db";
+import { getDb, getQuranData, buildAudioUrl } from "@/lib/db";
 
 export async function GET(request, { params }) {
   try {
@@ -13,49 +13,49 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url);
     const reciter = searchParams.get("reciter") || "Alafasy_128kbps";
 
-    const db = getDb();
-    const surah = db
-      .prepare(`
-        SELECT s.*, h.status AS hifz_status, h.confidence AS hifz_confidence
-        FROM surahs s
-        LEFT JOIN hifz_goals h ON h.surah_number = s.number
-        WHERE s.number = ?
-      `)
-      .get(surahNumber);
+    const { surahMap, ayahsBySurah } = getQuranData();
+    const baseSurah = surahMap.get(surahNumber);
 
-    if (!surah) {
+    if (!baseSurah) {
       return NextResponse.json({ error: "Surah not found" }, { status: 404 });
     }
 
-    const ayahs = db
-      .prepare(`
-        SELECT
-          a.id,
-          a.surah_number,
-          a.ayah_number,
-          a.text_arabic,
-          a.text_english,
-          a.text_indonesian,
-          a.text_tagalog,
-          a.juz,
-          a.page,
-          CASE WHEN b.id IS NOT NULL THEN 1 ELSE 0 END AS is_bookmarked,
-          b.collection AS bookmark_collection,
-          n.content AS note
-        FROM ayahs a
-        LEFT JOIN bookmarks b
-          ON b.surah_number = a.surah_number AND b.ayah_number = a.ayah_number
-        LEFT JOIN notes n
-          ON n.surah_number = a.surah_number AND n.ayah_number = a.ayah_number
-        WHERE a.surah_number = ?
-        ORDER BY a.ayah_number ASC
-      `)
-      .all(surahNumber)
-      .map((ayah) => ({
-        ...ayah,
-        is_bookmarked: Boolean(ayah.is_bookmarked),
-        audio_url: buildAudioUrl(ayah.surah_number, ayah.ayah_number, reciter),
-      }));
+    const db = getDb();
+    const hifz = db
+      .prepare("SELECT status, confidence FROM hifz_goals WHERE surah_number = ?")
+      .get(surahNumber);
+    const bookmarkRows = db
+      .prepare("SELECT ayah_number, collection FROM bookmarks WHERE surah_number = ?")
+      .all(surahNumber);
+    const noteRows = db
+      .prepare("SELECT ayah_number, content FROM notes WHERE surah_number = ?")
+      .all(surahNumber);
+
+    const bookmarkMap = new Map(bookmarkRows.map((b) => [b.ayah_number, b.collection]));
+    const noteMap = new Map(noteRows.map((n) => [n.ayah_number, n.content]));
+
+    const surah = {
+      ...baseSurah,
+      hifz_status: hifz?.status || null,
+      hifz_confidence: hifz?.confidence || null,
+    };
+
+    const rawAyahs = ayahsBySurah.get(surahNumber) || [];
+    const ayahs = rawAyahs.map((ayah) => ({
+      id: ayah.id,
+      surah_number: ayah.surah_number,
+      ayah_number: ayah.ayah_number,
+      text_arabic: ayah.text_arabic,
+      text_english: ayah.text_english,
+      text_indonesian: ayah.text_indonesian,
+      text_tagalog: ayah.text_tagalog,
+      juz: ayah.juz,
+      page: ayah.page,
+      is_bookmarked: bookmarkMap.has(ayah.ayah_number),
+      bookmark_collection: bookmarkMap.get(ayah.ayah_number) || null,
+      note: noteMap.get(ayah.ayah_number) || null,
+      audio_url: buildAudioUrl(ayah.surah_number, ayah.ayah_number, reciter),
+    }));
 
     return NextResponse.json({ surah, ayahs });
   } catch (err) {

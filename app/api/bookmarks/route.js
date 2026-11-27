@@ -1,28 +1,25 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, getQuranData } from "@/lib/db";
 
 export async function GET() {
   try {
     const db = getDb();
-    const bookmarks = db
-      .prepare(`
-        SELECT
-          b.id,
-          b.surah_number,
-          b.ayah_number,
-          b.collection,
-          b.created_at,
-          a.text_arabic,
-          a.text_english,
-          s.name_arabic,
-          s.name_english
-        FROM bookmarks b
-        JOIN ayahs a
-          ON a.surah_number = b.surah_number AND a.ayah_number = b.ayah_number
-        JOIN surahs s ON s.number = b.surah_number
-        ORDER BY b.created_at DESC
-      `)
+    const { ayahMap, surahMap } = getQuranData();
+    const rows = db
+      .prepare("SELECT id, surah_number, ayah_number, collection, created_at FROM bookmarks ORDER BY created_at DESC")
       .all();
+
+    const bookmarks = rows.map((b) => {
+      const a = ayahMap.get(`${b.surah_number}:${b.ayah_number}`);
+      const s = surahMap.get(b.surah_number);
+      return {
+        ...b,
+        text_arabic: a?.text_arabic || "",
+        text_english: a?.text_english || "",
+        name_arabic: s?.name_arabic || "",
+        name_english: s?.name_english || "",
+      };
+    });
 
     return NextResponse.json({ bookmarks });
   } catch (err) {
